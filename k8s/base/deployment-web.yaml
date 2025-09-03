@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: attendee-web
+  namespace: attendee
+  labels:
+    app.kubernetes.io/name: attendee
+    app.kubernetes.io/component: web
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: attendee
+      app.kubernetes.io/component: web
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 50%
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: attendee
+        app.kubernetes.io/component: web
+    spec:
+      serviceAccountName: attendee
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: web
+          image: ghcr.io/deepakprakash007/attendee:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash","-lc","/opt/bin/entrypoint.sh && gunicorn attendee.wsgi --bind 0.0.0.0:8000 --workers=${WEB_WORKERS:-3} --threads=${WEB_THREADS:-2} --timeout 120"]
+          env:
+            - name: DJANGO_SETTINGS_MODULE
+              value: attendee.settings.production-gke
+            - name: PORT
+              value: "8000"
+          envFrom:
+            - configMapRef:
+                name: env
+            - secretRef:
+                name: app-secrets
+          ports:
+            - containerPort: 8000
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /admin/login/
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /admin/login/
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "1Gi"
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.4
+          securityContext:
+            runAsNonRoot: true
+          command: ["/bin/sh","-lc","/cloud-sql-proxy --address 0.0.0.0 --port 5432 ${CLOUDSQL_INSTANCE_CONNECTION_NAME}"]
+          envFrom:
+            - configMapRef:
+                name: env
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+          ports:
+            - containerPort: 5432
+              name: db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: attendee-web
+  namespace: attendee
+  labels:
+    app.kubernetes.io/name: attendee
+    app.kubernetes.io/component: web
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: attendee
+    app.kubernetes.io/component: web
+  ports:
+    - port: 80
+      targetPort: 8000
+      name: http

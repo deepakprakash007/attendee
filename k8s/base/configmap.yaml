@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: env
+  namespace: attendee
+  labels:
+    app.kubernetes.io/name: attendee
+    app.kubernetes.io/part-of: attendee
+  annotations:
+    # Populate this from a rendered .env file using kubectl --from-env-file
+    # or via your CI pipeline templates.
+    attendee.dev/source: env
+
+# Note: We intentionally leave data empty. Use `kubectl create configmap env --from-env-file=.env --namespace attendee --dry-run=client -o yaml | kubectl apply -f -`
+# to update it from your local or CI environment.
+
+data: {}

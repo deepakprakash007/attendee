@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: attendee-worker
+  namespace: attendee
+  labels:
+    app.kubernetes.io/name: attendee
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: attendee
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: attendee
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: attendee
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: worker
+          image: ghcr.io/deepakprakash007/attendee:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash","-lc","/opt/bin/entrypoint.sh && celery -A attendee worker -l info --concurrency=${CELERY_CONCURRENCY:-4}"]
+          env:
+            - name: DJANGO_SETTINGS_MODULE
+              value: attendee.settings.production-gke
+          envFrom:
+            - configMapRef:
+                name: env
+            - secretRef:
+                name: app-secrets
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "1Gi"
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.4
+          securityContext:
+            runAsNonRoot: true
+          command: ["/bin/sh","-lc","/cloud-sql-proxy --address 0.0.0.0 --port 5432 ${CLOUDSQL_INSTANCE_CONNECTION_NAME}"]
+          envFrom:
+            - configMapRef:
+                name: env
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+          ports:
+            - containerPort: 5432
+              name: db
