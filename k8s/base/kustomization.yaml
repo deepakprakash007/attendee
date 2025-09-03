@@ -5,6 +5,7 @@ resources:
   - namespace.yaml
   - serviceaccount.yaml
   - roles.yaml
+  - priorityclasses.yaml
   - configmap.yaml
   - secret.yaml
   - deployment-web.yaml

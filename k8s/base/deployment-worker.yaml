@@ -35,6 +35,8 @@ spec:
                 name: env
             - secretRef:
                 name: app-secrets
+          # Ensure Celery does not overcommit CPU on small nodes
+          # Tune based on workload characteristics
           resources:
             requests:
               cpu: "500m"
