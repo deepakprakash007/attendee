@@ -48,8 +48,16 @@ if os.getenv("ERROR_REPORTS_RECEIVER_EMAIL_ADDRESS"):
 
 SERVER_EMAIL = "noreply@mail.attendee.dev"
 
-# Needed on GKE
-CSRF_TRUSTED_ORIGINS = ["https://*.attendee.dev"]
+# CSRF trusted origins - configurable via env. Fallback to SITE_DOMAIN or default domain.
+_csrf_env = os.getenv("CSRF_TRUSTED_ORIGINS")
+if _csrf_env:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_env.split(",") if o.strip()]
+else:
+    _site_domain = os.getenv("SITE_DOMAIN")
+    if _site_domain:
+        CSRF_TRUSTED_ORIGINS = [f"https://{_site_domain}", f"https://*.{_site_domain}"]
+    else:
+        CSRF_TRUSTED_ORIGINS = ["https://*.attendee.dev"]
 
 # Log more stuff in staging
 LOGGING = {
