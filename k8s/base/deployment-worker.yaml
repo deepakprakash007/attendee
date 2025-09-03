@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: attendee-worker
+  namespace: attendee
+  labels:
+    app.kubernetes.io/name: attendee
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: attendee
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: attendee
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: attendee
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: worker
+          image: ghcr.io/deepakprakash007/attendee:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash","-lc","/opt/bin/entrypoint.sh && celery -A attendee worker -l info --concurrency=${CELERY_CONCURRENCY:-4}"]
+          env:
+            - name: DJANGO_SETTINGS_MODULE
+              value: attendee.settings.production-gke
+          envFrom:
+            - configMapRef:
+                name: env
+            - secretRef:
+                name: app-secrets
+          # Ensure Celery does not overcommit CPU on small nodes
+          # Tune based on workload characteristics
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "1Gi"

@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: attendee
+resources:
+  - namespace.yaml
+  - serviceaccount.yaml
+  - roles.yaml
+  - priorityclasses.yaml
+  - configmap.yaml
+  - secret.yaml
+  - deployment-web.yaml
+  - deployment-worker.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - ingress.yaml

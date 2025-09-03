@@ -74,6 +74,7 @@ class BotPodCreator:
                 annotations=annotations
             ),
             spec=client.V1PodSpec(
+                priority_class_name=os.getenv("BOT_PRIORITY_CLASS_NAME", None),
                 containers=[
                     client.V1Container(
                         name="bot-proc",

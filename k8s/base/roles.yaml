@@ -1,0 +1,23 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: bot-pod-manager
+  namespace: attendee
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bot-pod-manager-binding
+  namespace: attendee
+subjects:
+  - kind: ServiceAccount
+    name: attendee
+    namespace: attendee
+roleRef:
+  kind: Role
+  name: bot-pod-manager
+  apiGroup: rbac.authorization.k8s.io
