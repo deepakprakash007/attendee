@@ -67,21 +67,6 @@ spec:
             limits:
               cpu: "2"
               memory: "1Gi"
-        - name: cloud-sql-proxy
-          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.4
-          securityContext:
-            runAsNonRoot: true
-          command: ["/bin/sh","-lc","/cloud-sql-proxy --address 0.0.0.0 --port 5432 ${CLOUDSQL_INSTANCE_CONNECTION_NAME}"]
-          envFrom:
-            - configMapRef:
-                name: env
-          resources:
-            requests:
-              cpu: "50m"
-              memory: "64Mi"
-          ports:
-            - containerPort: 5432
-              name: db
 ---
 apiVersion: v1
 kind: Service
