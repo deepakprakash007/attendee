@@ -33,7 +33,10 @@ fi
 
 gcloud container clusters get-credentials ${CLUSTER_NAME} --region ${REGION} --project ${PROJECT_ID}
 
-# 3. Namespace and base manifests
+# 3. Namespace first
+kubectl apply -f k8s/base/namespace.yaml
+
+# 3b. Apply base manifests (ConfigMap/Secret will be picked up if present)
 kubectl apply -k k8s/base
 
 # 4. Create image pull secret (if using private registry)
@@ -41,18 +44,23 @@ kubectl apply -k k8s/base
 
 # 5. Create ConfigMap from env.example (edit first!) and Secret from sensitive vars
 # Edit deploy/gke/env.example and save to deploy/gke/.env, prefer DATABASE_URL with a Private IP host so bot pods can connect without a sidecar.
-# Then run:
-#    kubectl -n attendee create configmap env --from-env-file=deploy/gke/.env --dry-run=client -o yaml | kubectl apply -f -
-#    kubectl -n attendee create secret generic app-secrets \
-#       --from-literal=DJANGO_SECRET_KEY=... \
-#       --from-literal=CREDENTIALS_ENCRYPTION_KEY=... \
-#       --from-literal=STRIPE_SECRET_KEY=... \
-#       --from-literal=STRIPE_WEBHOOK_SECRET=... \
-#       --from-literal=EMAIL_HOST_USER=... \
-#       --from-literal=EMAIL_HOST_PASSWORD=... \
-#       --from-literal=ZOOM_MEETING_SDK_KEY=... \
-#       --from-literal=ZOOM_MEETING_SDK_SECRET=... \
-#       --dry-run=client -o yaml | kubectl apply -f -
+# If deploy/gke/.env exists, auto-create/update the ConfigMap now:
+if [[ -f deploy/gke/.env ]]; then
+  kubectl -n attendee create configmap env --from-env-file=deploy/gke/.env --dry-run=client -o yaml | kubectl apply -f -
+else
+  echo "deploy/gke/.env not found. Create it from deploy/gke/env.example and re-run to auto-create the ConfigMap."
+fi
+# Create secrets interactively or via CI (example):
+# kubectl -n attendee create secret generic app-secrets \
+#   --from-literal=DJANGO_SECRET_KEY=... \
+#   --from-literal=CREDENTIALS_ENCRYPTION_KEY=... \
+#   --from-literal=STRIPE_SECRET_KEY=... \
+#   --from-literal=STRIPE_WEBHOOK_SECRET=... \
+#   --from-literal=EMAIL_HOST_USER=... \
+#   --from-literal=EMAIL_HOST_PASSWORD=... \
+#   --from-literal=ZOOM_MEETING_SDK_KEY=... \
+#   --from-literal=ZOOM_MEETING_SDK_SECRET=... \
+#   --dry-run=client -o yaml | kubectl apply -f -
 
 # 6. Optionally set image for deployments using kustomize (IMAGE=registry/image:tag)
 if [[ -n "${IMAGE}" ]]; then
