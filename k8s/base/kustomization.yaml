@@ -12,4 +12,3 @@ resources:
   - hpa.yaml
   - pdb.yaml
   - ingress.yaml
-  - hpa-bot-scaler.yaml
