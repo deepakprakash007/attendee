@@ -78,6 +78,7 @@ After setup:
 6) BotPodCreator and fast bot scale-out
 - Code checks LAUNCH_BOT_METHOD=kubernetes and creates a Pod per bot.
 - It requires CUBER_RELEASE_VERSION; BOT_POD_IMAGE defaults to nduncan{app}/{app} but you should set BOT_POD_IMAGE to your image repo.
+- Set BOT_PRIORITY_CLASS_NAME=bots-high-priority to prioritize bot pods for scheduling during bursts (we ship a PriorityClass in k8s/base/priorityclasses.yaml).
 - The bot pod inherits env from ConfigMap and Secret, so be sure DATABASE_URL/REDIS_URL are reachable from anywhere in the cluster (Private IPs recommended). No sidecar is present in bot pods.
 
 7) Karpenter integration (optional)
